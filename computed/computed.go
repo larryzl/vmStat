@@ -95,7 +95,7 @@ func init() {
 func (r *Result) Run() {
 	defer redisPool.Close()
 	accessData, err := utils.SerData(r.filePath)
-	region, _ := ip2region.New("./utils/ip2region/ip2region.db")
+	region, _ := ip2region.New("./ip2region.db")
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 r.dataPrefix + ":" + v.Uuid
@@ -123,11 +123,15 @@ func (r *Result) Run() {
 		return
 	}
 	for _, v := range accessData {
+		if v.Uid == "" || v.Uuid == "" {
+			continue
+		}
 		ipInfo, err := region.MemorySearch(v.Ip)
 		if err != nil {
 			logger.Error("解析IP地址错误:", err)
 			continue
 		}
+
 		areaFieldKey := v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 		timeFieldKey := v.Appid + ":" + v.Path
 

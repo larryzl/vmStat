@@ -2,9 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="96c31648-a6ae-4a0a-a7cc-c70c197c1664" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/ip2region.db" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/computed/computed.go" beforeDir="false" afterPath="$PROJECT_DIR$/computed/computed.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/202001171723.sql" beforeDir="false" afterPath="$PROJECT_DIR$/static/202001171723.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/arr_test/arr_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/baseTest3/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/baseTest3/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/gredis.go_bak" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/vmStat" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,16 +47,16 @@
     <property name="configurable.Module.GOPATH.is.expanded" value="false" />
     <property name="configurable.Project.GOPATH.is.expanded" value="true" />
     <property name="go.import.settings.migrated" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/utils/ip2region" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="preferences.sourceCode.Go" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/utils/ip2region" />
     </key>
-    <key name="CopyFile.RECENT_KEYS">
+    <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/utils/ip2region" />
-      <recent name="$PROJECT_DIR$" />
     </key>
   </component>
   <component name="RunManager" selected="Go Test.BenchmarkInMap in vmStat/test/arr_test">
