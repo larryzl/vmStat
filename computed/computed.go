@@ -200,15 +200,19 @@ func (r *Result) Run() {
 		}
 
 	}
-	//for _, v := range appidUid {
-	//	wg.Add(1)
-	//	go func() {
-	//		redisConn := redisPool.Get()
-	//		defer wg.Done()
-	//		defer redisConn.Close()
-	//		_, err = redisConn.Do("SAdd", v...)
-	//	}()
-	//}
+	for _, v := range appidUid {
+		wg.Add(1)
+		go func(v []interface{}) {
+			redisConn := redisPool.Get()
+			defer wg.Done()
+			defer redisConn.Close()
+			fmt.Println("SAdd:",v)
+			_, err = redisConn.Do("SAdd", v...)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}(v)
+	}
 	wg.Add(8)
 	// 计算数据
 	go r.newUserCalculation(userMap, "user")

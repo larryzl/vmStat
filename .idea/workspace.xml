@@ -2,17 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="96c31648-a6ae-4a0a-a7cc-c70c197c1664" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/computed/computed.go" beforeDir="false" afterPath="$PROJECT_DIR$/computed/computed.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/computed/computed.go_bak" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/202001171720.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/202001171722.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/202001171723.sql" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/app_user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/app_user.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/user.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/baseTest3/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/baseTest3/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vmStat" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
