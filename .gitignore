@@ -9,6 +9,7 @@
 *_bak
 # Test binary, built with `go test -c`
 *.test
+*.csv
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out

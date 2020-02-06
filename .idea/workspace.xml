@@ -2,14 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="96c31648-a6ae-4a0a-a7cc-c70c197c1664" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/ip2region.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/computed/computed.go" beforeDir="false" afterPath="$PROJECT_DIR$/computed/computed.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/202001171723.sql" beforeDir="false" afterPath="$PROJECT_DIR$/static/202001171723.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test/arr_test/arr_test.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/computed/computed.go_bak" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/202001171720.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/202001171722.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/202001171723.sql" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/app_user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/app_user.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/user.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test/baseTest3/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/test/baseTest3/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/gredis.go_bak" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/vmStat" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -155,22 +157,22 @@
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
     <state x="2053" y="323" key="#com.intellij.ide.util.MemberChooser/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579073518877" />
-    <state width="1878" height="336" key="GridCell.Tab.0.bottom" timestamp="1579242415099">
+    <state width="1878" height="336" key="GridCell.Tab.0.bottom" timestamp="1579490114667">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
-    <state width="1878" height="336" key="GridCell.Tab.0.bottom/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579242415099" />
-    <state width="1878" height="336" key="GridCell.Tab.0.center" timestamp="1579242415097">
+    <state width="1878" height="336" key="GridCell.Tab.0.bottom/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579490114667" />
+    <state width="1878" height="336" key="GridCell.Tab.0.center" timestamp="1579490114664">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
-    <state width="1878" height="336" key="GridCell.Tab.0.center/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579242415097" />
-    <state width="1878" height="336" key="GridCell.Tab.0.left" timestamp="1579242415096">
+    <state width="1878" height="336" key="GridCell.Tab.0.center/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579490114663" />
+    <state width="1878" height="336" key="GridCell.Tab.0.left" timestamp="1579490114660">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
-    <state width="1878" height="336" key="GridCell.Tab.0.left/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579242415096" />
-    <state width="1878" height="336" key="GridCell.Tab.0.right" timestamp="1579242415098">
+    <state width="1878" height="336" key="GridCell.Tab.0.left/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579490114660" />
+    <state width="1878" height="336" key="GridCell.Tab.0.right" timestamp="1579490114665">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
-    <state width="1878" height="336" key="GridCell.Tab.0.right/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579242415098" />
+    <state width="1878" height="336" key="GridCell.Tab.0.right/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579490114665" />
     <state x="1749" y="239" key="SettingsEditor" timestamp="1578640733299">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>

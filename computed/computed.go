@@ -22,7 +22,7 @@ const (
 	timeTableName          = "ob_stat_time"      // 时间表
 	areaTableName          = "ob_stat_time_area" // 地区表
 	newUserTableName       = "ob_stat_user"      // 新用户表
-	retentionRateTableName = "ob_stat_retention"
+	retentionRateTableName = "ob_stat_retention" // 用户留存表
 	mapLength              = 100
 )
 
@@ -118,6 +118,8 @@ func (r *Result) Run() {
 	userMap := make(map[string]string, 1024)    // 存储用户统计
 	appUserMap := make(map[string]string, 1024) // 存储用户统计
 
+	appidUid := make(map[string][]interface{}, 1024) // 存储每个APP对应的UID
+
 	if err != nil {
 		fmt.Println("序列化数据错误:", err)
 		return
@@ -148,6 +150,12 @@ func (r *Result) Run() {
 		if _, ok := appUserMap[v.Appid+":"+v.Uid]; !ok {
 			appUserMap[v.Appid+":"+v.Uid] = v.Appid
 		}
+
+		if _, ok := appidUid[v.Appid]; !ok {
+			appidUid[v.Appid] = make([]interface{}, 1, 100)
+			appidUid[v.Appid][0] =r.dataPrefix + ":UID:" + v.Appid
+		}
+		appidUid[v.Appid] = append(appidUid[v.Appid], v.Uid)
 
 		if _, ok := uvMap[uvKey]; !ok {
 			uvMap[uvKey] = areaFieldKey
@@ -192,6 +200,15 @@ func (r *Result) Run() {
 		}
 
 	}
+	//for _, v := range appidUid {
+	//	wg.Add(1)
+	//	go func() {
+	//		redisConn := redisPool.Get()
+	//		defer wg.Done()
+	//		defer redisConn.Close()
+	//		_, err = redisConn.Do("SAdd", v...)
+	//	}()
+	//}
 	wg.Add(8)
 	// 计算数据
 	go r.newUserCalculation(userMap, "user")
@@ -215,7 +232,7 @@ func (r *Result) Run() {
 	defer redisConn.Close()
 	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", r.sqlFileName}...)
 	if err != nil {
-		logger.Error("Redis LPush err:", err)
+		logger.Error("Redis LPush err:\n", err)
 		return
 	}
 
@@ -326,14 +343,18 @@ func (r *Result) newUserCalculation(m map[string]string, s string) {
 
 	var newKeys = []interface{}{s}
 	newUserDump := make([]byte, 0, 100)
+	// 关闭连接
 	defer func() {
 		wg.Done()
-		redisConn.Close()
+		err := redisConn.Close()
+		if err != nil {
+			logger.Error("Redis Close err:\n", err)
+		}
 	}()
 
 	res, err := redis.Strings(redisConn.Do("SMembers", s))
 	if err != nil {
-		logger.Error("Redis SMembers UUID err:", err)
+		logger.Error("Redis SMembers UUID err:%s\n", err)
 		return
 	}
 
@@ -363,7 +384,7 @@ func (r *Result) newUserCalculation(m map[string]string, s string) {
 	if len(newKeys) > 1 {
 		_, err = redisConn.Do("SAdd", newKeys...)
 		if err != nil {
-			logger.Error("Redis SAdd err:", err)
+			logger.Error("Redis SAdd err:%s\n", err)
 			return
 		}
 

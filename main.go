@@ -26,8 +26,7 @@ func main() {
 		return
 	}
 	c := computed.NewResult(filePath)
-	
-	
+
 	c.Run()
 	logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
 	
