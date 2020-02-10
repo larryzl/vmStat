@@ -102,6 +102,7 @@ func (r *Result) Run() {
 
 	accessData, err := utils.SerData(r.filePath)
 	baseDir ,_ := os.Getwd()
+	fmt.Println(baseDir+"utils/ip2region/ip2region.db")
 	region, _ := ip2region.New(baseDir+"utils/ip2region/ip2region.db")
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
