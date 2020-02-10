@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
 	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -101,9 +102,10 @@ func (r *Result) Run() {
 	}()
 
 	accessData, err := utils.SerData(r.filePath)
-	baseDir ,_ := os.Getwd()
-	fmt.Println(baseDir+"utils/ip2region/ip2region.db")
-	region, _ := ip2region.New(baseDir+"utils/ip2region/ip2region.db")
+
+	ip2regionDbfile := path.Join(os.Getenv("GOPATH"),"src/vmStat/ip2region.db")
+	fmt.Println(ip2regionDbfile)
+	region, _ := ip2region.New(ip2regionDbfile)
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 r.dataPrefix + ":" + v.Uuid
