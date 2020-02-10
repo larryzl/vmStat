@@ -10,6 +10,7 @@ package computed
 import (
 	"fmt"
 	"github.com/gomodule/redigo/redis"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -78,7 +79,8 @@ func NewResult(filePath string) *Result {
 
 var (
 	logger     = logging.NewConsoleLogger("debug")
-	redisPool  = utils.Pool
+	redisPool  = utils.DataPool
+	queuePool  = utils.QueuePool
 	wg         sync.WaitGroup
 	timeResult = make(map[string]*baseStatistic, 100) // 统计时间表结果
 	timeKeys   = make([]interface{}, 0, 100)          // 存储时间表字段
@@ -93,9 +95,14 @@ func init() {
 }
 
 func (r *Result) Run() {
-	defer redisPool.Close()
+	defer func() {
+		_ = redisPool.Close()
+		_ = queuePool.Close()
+	}()
+
 	accessData, err := utils.SerData(r.filePath)
-	region, _ := ip2region.New("./ip2region.db")
+	baseDir ,_ := os.Getwd()
+	region, _ := ip2region.New(baseDir+"utils/ip2region/ip2region.db")
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 r.dataPrefix + ":" + v.Uuid
@@ -153,7 +160,7 @@ func (r *Result) Run() {
 
 		if _, ok := appidUid[v.Appid]; !ok {
 			appidUid[v.Appid] = make([]interface{}, 1, 100)
-			appidUid[v.Appid][0] =r.dataPrefix + ":UID:" + v.Appid
+			appidUid[v.Appid][0] = r.dataPrefix + ":RETENTION:" + v.Appid
 		}
 		appidUid[v.Appid] = append(appidUid[v.Appid], v.Uid)
 
@@ -200,14 +207,17 @@ func (r *Result) Run() {
 		}
 
 	}
+	// 将每个appid 下的 uid写入到redis set中，key格式 20200120:
 	for _, v := range appidUid {
 		wg.Add(1)
 		go func(v []interface{}) {
 			redisConn := redisPool.Get()
 			defer wg.Done()
 			defer redisConn.Close()
-			fmt.Println("SAdd:",v)
+			// 写入redis
 			_, err = redisConn.Do("SAdd", v...)
+			// 写文件
+
 			if err != nil {
 				fmt.Println(err)
 			}
