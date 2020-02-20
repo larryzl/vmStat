@@ -2,8 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="96c31648-a6ae-4a0a-a7cc-c70c197c1664" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/config.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/conf.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/computed/computed.go" beforeDir="false" afterPath="$PROJECT_DIR$/computed/computed.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/app_user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/app_user.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/static/user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/user.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/ip2region/ip2region.db" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/redisPool.go" beforeDir="false" afterPath="$PROJECT_DIR$/utils/redisPool.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -41,14 +49,14 @@
     <property name="configurable.Project.GOPATH.is.expanded" value="true" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
-    <property name="settings.editor.selected.configurable" value="preferences.sourceCode.Go" />
+    <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
   </component>
   <component name="RecentsManager">
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$" />
+    <key name="MoveFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/utils/ip2region" />
     </key>
-    <key name="MoveFile.RECENT_KEYS">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
       <recent name="$PROJECT_DIR$/utils/ip2region" />
     </key>
   </component>
@@ -75,7 +83,7 @@
       <pattern value="^BenchmarkInArr$" />
       <method v="2" />
     </configuration>
-    <configuration name="BenchmarkInMap in vmStat/test/arr_test" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+    <configuration name="BenchmarkInMap in vmStat/test/arr_test" type="GoTestRunConfiguration" factoryName="Go Test" nameIsGenerated="true">
       <module name="vmStat" />
       <working_directory value="$PROJECT_DIR$/test/arr_test" />
       <framework value="gobench" />
@@ -110,7 +118,6 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Go Test.BenchmarkInMap in vmStat/test/arr_test" />
         <item itemvalue="Go Test.BenchmarkInArr in vmStat/test/arr_test" />
         <item itemvalue="Go Test.BenchmarkHello in vmStat/test/arr_test" />
         <item itemvalue="Go Test.BenchmarkTemplateParallel in vmStat/test/arr_test" />
@@ -164,21 +171,29 @@
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
     <state width="1878" height="336" key="GridCell.Tab.0.right/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579490114665" />
-    <state x="1749" y="239" key="SettingsEditor" timestamp="1578640733299">
-      <screen x="1280" y="0" width="1920" height="1200" />
+    <state x="410" y="209" key="SettingsEditor" timestamp="1581496564191">
+      <screen x="0" y="0" width="1680" height="1050" />
     </state>
     <state x="1749" y="239" key="SettingsEditor/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1578640733299" />
+    <state x="410" y="209" key="SettingsEditor/0.0.1680.1050@0.0.1680.1050" timestamp="1581496564191" />
     <state width="500" height="445" key="SwitcherDM" timestamp="1578648814657">
       <screen x="1280" y="0" width="1920" height="1200" />
     </state>
     <state width="500" height="445" key="SwitcherDM/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1578648814657" />
-    <state x="2002" y="215" key="refactoring.ChangeSignatureDialog" timestamp="1579244108153">
-      <screen x="1280" y="0" width="1920" height="1200" />
+    <state x="418" y="126" key="com.goide.refactor.move.GoMoveDeclarationDialog" timestamp="1582018712279">
+      <screen x="0" y="0" width="1280" height="800" />
+    </state>
+    <state x="418" y="126" key="com.goide.refactor.move.GoMoveDeclarationDialog/0.0.1280.800@0.0.1280.800" timestamp="1582018712279" />
+    <state x="481" y="30" key="refactoring.ChangeSignatureDialog" timestamp="1581997104704">
+      <screen x="0" y="0" width="1280" height="800" />
     </state>
     <state x="2002" y="215" key="refactoring.ChangeSignatureDialog/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579244108153" />
-    <state x="1905" y="271" width="670" height="676" key="search.everywhere.popup" timestamp="1579144295052">
-      <screen x="1280" y="0" width="1920" height="1200" />
+    <state x="481" y="30" key="refactoring.ChangeSignatureDialog/0.0.1280.800@0.0.1280.800" timestamp="1581997104704" />
+    <state x="417" y="198" width="670" height="438" key="search.everywhere.popup" timestamp="1581937029903">
+      <screen x="0" y="23" width="1280" height="777" />
     </state>
     <state x="1905" y="271" width="670" height="676" key="search.everywhere.popup/0.0.1280.800/1280.0.1920.1200@1280.0.1920.1200" timestamp="1579144295052" />
+    <state x="469" y="203" width="670" height="507" key="search.everywhere.popup/0.0.1440.900@0.0.1440.900" timestamp="1581404841372" />
+    <state x="417" y="198" width="670" height="438" key="search.everywhere.popup/0.23.1280.777@0.23.1280.777" timestamp="1581937029903" />
   </component>
 </project>

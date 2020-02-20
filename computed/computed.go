@@ -18,6 +18,8 @@ import (
 	"vmStat/logging"
 	"vmStat/utils"
 	"vmStat/utils/ip2region"
+
+	//"vmStat/utils/ip2region"
 )
 
 const (
@@ -70,19 +72,16 @@ func newStatisticItem() *baseStatistic {
 }
 
 // Result 构造方法
-func NewResult(filePath string) *Result {
-	dataPrefixArray := strings.Split(filePath, ".")
-	dataPrefix := dataPrefixArray[len(dataPrefixArray)-2][:8]
-	hourPrefix := dataPrefixArray[len(dataPrefixArray)-2][:10]
-	sqlFileName := dataPrefixArray[len(dataPrefixArray)-2][:12] + ".sql"
-	return &Result{filePath: filePath, dataPrefix: dataPrefix, hourPrefix: hourPrefix, sqlFileName: sqlFileName}
+func New() *Result {
+	return &Result{}
 }
 
 var (
 	logger     = logging.NewConsoleLogger("debug")
+	wg         sync.WaitGroup
+	region     *ip2region.Ip2Region
 	redisPool  = utils.DataPool
 	queuePool  = utils.QueuePool
-	wg         sync.WaitGroup
 	timeResult = make(map[string]*baseStatistic, 100) // 统计时间表结果
 	timeKeys   = make([]interface{}, 0, 100)          // 存储时间表字段
 	areaResult = make(map[string]*baseStatistic, 100) // 统计地区表结果
@@ -92,20 +91,47 @@ var (
 )
 
 func init() {
-
+	if utils.Setting.Mode == "retention" {
+		return
+	}
+	_, err := os.Stat(utils.Setting.IpFile)
+	if os.IsNotExist(err) {
+		logger.Error("[%s] 文件不存在,err:%v\n", utils.Setting.IpFile, err)
+	}
+	region, _ = ip2region.New(utils.Setting.IpFile)
+	logger.Debug("加载IP库文件完成,位置:%s\n", utils.Setting.IpFile)
 }
 
-func (r *Result) Run() {
-	defer func() {
-		_ = redisPool.Close()
-		_ = queuePool.Close()
-	}()
-
-	accessData, err := utils.SerData(r.filePath)
-
-	ip2regionDbfile := path.Join(os.Getenv("GOPATH"),"src/vmStat/ip2region.db")
-	fmt.Println(ip2regionDbfile)
-	region, _ := ip2region.New(ip2regionDbfile)
+func (r *Result) Run(filePath string) (err error) {
+	if filePath == "" {
+		redisConn := queuePool.Get()
+		defer redisConn.Close()
+		logName, err := redis.String(redisConn.Do("RPop", "LOG_QUEUE"))
+		if err != nil {
+			//logger.Error("查询Redis错误,%v\n", err)
+			return err
+		}
+		if logName == "" {
+			logger.Debug("队列中没有待计算的日志文件...\n")
+			return fmt.Errorf("队列中没有待计算的日志文件")
+		}
+		logger.Debug("成功从队列中获取到日志文件:%s\n", logName)
+		filePath = path.Join(utils.Setting.Log.Path, logName)
+	}
+	_, err = os.Stat(filePath)
+	if os.IsNotExist(err) {
+		logger.Error("文件不存在,%s\n", filePath)
+		return
+	}
+	dataPrefixArray := strings.Split(filePath, ".")
+	r.dataPrefix = dataPrefixArray[len(dataPrefixArray)-2][:8]
+	r.hourPrefix = dataPrefixArray[len(dataPrefixArray)-2][:10]
+	r.sqlFileName = dataPrefixArray[len(dataPrefixArray)-2][:12] + ".sql"
+	//defer func() {
+	//	_ = redisPool.Close()
+	//	_ = queuePool.Close()
+	//}()
+	accessData, err := utils.SerData(filePath)
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 r.dataPrefix + ":" + v.Uuid
@@ -125,19 +151,29 @@ func (r *Result) Run() {
 	appIpMap := make(map[interface{}]string, 1024)
 	appIpSlice := make([]interface{}, 0, 1024)
 
-	userMap := make(map[string]string, 1024)    // 存储用户统计
+	userMap := make(map[string]string, 1024) // 存储用户统计
+	uuidSlice := make([]interface{}, 0, 1024)
+	uuidSlice = append(uuidSlice, "user_temp")
+	//appidUuidMap := make(map[string][]interface{}, 1024)
 	appUserMap := make(map[string]string, 1024) // 存储用户统计
+	uidSlice := make([]interface{}, 0, 1024)
+	uidSlice = append(uidSlice, "app_user_temp")
+
+	// 保存所有appid的切片，将APPID 存储到 日期 的集合中，以供查找该日期所有APPID使用
+	appidSlice := make([]interface{}, 0, 100)
+	appidSlice = append(appidSlice, r.dataPrefix)
 
 	appidUid := make(map[string][]interface{}, 1024) // 存储每个APP对应的UID
 
 	if err != nil {
-		fmt.Println("序列化数据错误:", err)
+		logger.Error("序列化数据错误:%v\n", err)
 		return
 	}
 	for _, v := range accessData {
 		if v.Uid == "" || v.Uuid == "" {
 			continue
 		}
+
 		ipInfo, err := region.MemorySearch(v.Ip)
 		if err != nil {
 			logger.Error("解析IP地址错误:", err)
@@ -154,14 +190,24 @@ func (r *Result) Run() {
 		ipKey := r.dataPrefix + ":" + v.Ip                                        // Redis存储的字段 日期+ path + appid + uid
 		appIpKey := r.dataPrefix + ":" + v.Appid + ":" + v.Ip                     // Redis存储的字段 日期+ path + appid + uid
 
-		if _, ok := userMap[v.Uuid]; !ok {
+		if _, ok := userMap[v.Uuid]; !ok { //判断uuid是否出现过
 			userMap[v.Uuid] = v.Appid
+			uuidSlice = append(uuidSlice, v.Uuid)
+			//if _, ok := appidUuidMap[v.Appid]; !ok { // 判断appid是否出现过
+			//	appidUuidMap[v.Appid] = make([]interface{}, 0, 100)
+			//	appidUuidMap[v.Appid] = append(appidUuidMap[v.Appid], "user")
+			//}
+			//appidUuidMap[v.Appid] = append(appidUuidMap[v.Appid], v.Uuid)
 		}
 		if _, ok := appUserMap[v.Appid+":"+v.Uid]; !ok {
 			appUserMap[v.Appid+":"+v.Uid] = v.Appid
+			uidSlice = append(uidSlice, v.Appid+":"+v.Uid)
 		}
 
 		if _, ok := appidUid[v.Appid]; !ok {
+
+			appidSlice = append(appidSlice, v.Appid)
+
 			appidUid[v.Appid] = make([]interface{}, 1, 100)
 			appidUid[v.Appid][0] = r.dataPrefix + ":RETENTION:" + v.Appid
 		}
@@ -210,26 +256,37 @@ func (r *Result) Run() {
 		}
 
 	}
-	// 将每个appid 下的 uid写入到redis set中，key格式 20200120:
-	for _, v := range appidUid {
-		wg.Add(1)
-		go func(v []interface{}) {
-			redisConn := redisPool.Get()
-			defer wg.Done()
-			defer redisConn.Close()
+	// 将每个appid 下的 uid写入到redis 集合中，key格式 20200120:
+	wg.Add(1)
+	go func(appidSlice []interface{}) {
+		redisConn := queuePool.Get()
+		defer wg.Done()
+		defer redisConn.Close()
+		_, err = redisConn.Do("SAdd", appidSlice...)
+		if err != nil {
+			logger.Error("redis SAdd err:%v\n", err)
+		}
+	}(appidSlice)
+
+	//
+	wg.Add(1)
+	go func() {
+		redisConn := queuePool.Get()
+		defer wg.Done()
+		defer redisConn.Close()
+		for _, v := range appidUid {
 			// 写入redis
 			_, err = redisConn.Do("SAdd", v...)
 			// 写文件
-
 			if err != nil {
-				fmt.Println(err)
+				logger.Error("redis SAdd err:%v\n", err)
 			}
-		}(v)
-	}
+		}
+	}()
 	wg.Add(8)
 	// 计算数据
-	go r.newUserCalculation(userMap, "user")
-	go r.newUserCalculation(appUserMap, "app_user")
+	go r.newUserCalculation(userMap, uuidSlice, "user")
+	go r.newUserCalculation(appUserMap, uidSlice, "app_user")
 	go r.basicInfoCalculation(uvSlice, uvMap, "uv")
 	go r.basicInfoCalculation(pathUvSlice, pathUvMap, "path_uv")
 	go r.basicInfoCalculation(appUvSlice, appUvMap, "app_uv")
@@ -245,14 +302,14 @@ func (r *Result) Run() {
 	wg.Wait()
 
 	// 写入消息队列
-	redisConn := redisPool.Get()
+	redisConn := queuePool.Get()
 	defer redisConn.Close()
 	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", r.sqlFileName}...)
 	if err != nil {
 		logger.Error("Redis LPush err:\n", err)
 		return
 	}
-
+	return nil
 }
 
 // uv/pv/app_uv 等信息计算
@@ -355,11 +412,15 @@ func (r *Result) timeFormat(s string) (string, error) {
 }
 
 // 新用户数据计算
-func (r *Result) newUserCalculation(m map[string]string, s string) {
-	redisConn := redisPool.Get()
-
-	var newKeys = []interface{}{s}
-	newUserDump := make([]byte, 0, 100)
+func (r *Result) newUserCalculation(m map[string]string, slice []interface{}, s string) {
+	/*
+		m = {appid:[uuid....]}
+		m = {appid:[uid....]}
+	*/
+	redisConn := queuePool.Get()
+	newUserDump := make([]byte, 0, 1024)
+	//var newKeys = []interface{}{s}
+	//newUserDump := make([]byte, 0, 100)
 	// 关闭连接
 	defer func() {
 		wg.Done()
@@ -368,23 +429,27 @@ func (r *Result) newUserCalculation(m map[string]string, s string) {
 			logger.Error("Redis Close err:\n", err)
 		}
 	}()
-
-	res, err := redis.Strings(redisConn.Do("SMembers", s))
+	// 1. 将所有uuid 写入临时的集合中
+	//fmt.Println(slice)
+	redisConn.Do("SAdd", slice...)
+	// 2. 计算交集
+	redisInter, err := redis.Strings(redisConn.Do("SInter", s, s+"_temp"))
 	if err != nil {
-		logger.Error("Redis SMembers UUID err:%s\n", err)
+		logger.Error("Redis SInter err:%v\n", err)
 		return
 	}
-
-	redisRes := make(map[string]int, len(res))
-	for i, v := range res {
-		redisRes[v] = i
+	//fmt.Println("Redis Inter:", redisInter)
+	// 3. 删除临时集合
+	redisConn.Do("Del", s+"_temp")
+	// 4. 计算
+	redisRes := make(map[string]int, len(redisInter))
+	for _, v := range redisInter {
+		redisRes[v] = 0
 	}
-
 	switch s {
 	case "user":
 		for k, v := range m {
 			if _, ok := redisRes[k]; !ok {
-				newKeys = append(newKeys, k)
 				userResult[v].user++
 				newUserDump = append(newUserDump, []byte(k+"\n")...)
 			}
@@ -392,27 +457,21 @@ func (r *Result) newUserCalculation(m map[string]string, s string) {
 	case "app_user":
 		for k, v := range m {
 			if _, ok := redisRes[k]; !ok {
-				newKeys = append(newKeys, k)
-				newUserDump = append(newUserDump, []byte(k+"\n")...)
 				userResult[v].appUser++
+				newUserDump = append(newUserDump, []byte(k+"\n")...)
 			}
 		}
-	}
-	if len(newKeys) > 1 {
-		_, err = redisConn.Do("SAdd", newKeys...)
-		if err != nil {
-			logger.Error("Redis SAdd err:%s\n", err)
-			return
-		}
-
-		err = utils.WriteFiles("static/"+s+".csv", newUserDump)
-		if err != nil {
-			logger.Error("Write Files err:", err)
-			return
-		}
 
 	}
-
+	err = utils.WriteFiles("static/"+s+".csv", newUserDump)
+	if err != nil {
+		logger.Error("Write Files err:", err)
+		return
+	}
+	// 5. 将新用户追加到redis中
+	slice[0] = s
+	//fmt.Println(slice)
+	redisConn.Do("SAdd", slice...)
 }
 
 // 生成 ob_stat_time/ob_stat_time_area 表sql文件
@@ -525,3 +584,73 @@ func (r *Result) generateUserSql(result map[string]*userStatistic, keys []interf
 		return
 	}
 }
+
+func (r *Result) Retention() (err error) {
+
+	fmt.Println("执行留存率计算")
+	/*
+		1. 获取当前时间
+		2. 依次计算每日APPID交集，如果存在，则计算，不存在，则留存率为0
+	*/
+
+	timeStamp := time.Now().AddDate(0, 0, -1)
+
+	// 前一天日期
+	contrast := timeStamp.Format("20060102")
+
+	redisConn := queuePool.Get()
+	sqlData := make([]byte, 0, 1024)
+
+	for i := 1; i <= 7; i++ {
+		timeStamp = timeStamp.AddDate(0, 0, -1)
+		eachTimeStr := timeStamp.Format("20060102")
+		// 依次取出交集
+		res, err := redis.Strings(redisConn.Do("SInter", contrast, eachTimeStr))
+		fmt.Println(timeStamp.Format("20060102"), i, "天留存率计算")
+		if err != nil {
+			return err
+		}
+
+		for appid := range res {
+			//fmt.Printf("appid:%T\n", appid)
+			// 分别计算两天到appid交集
+			key := fmt.Sprintf("%s:RETENTION:%d", eachTimeStr, appid)
+			contrastKey := fmt.Sprintf("%s:RETENTION:%d", contrast, appid)
+			num, err := redis.Int(redisConn.Do("SCard", key))
+			if num == 0 {
+				logger.Debug("获取到%s数量为0\n", key)
+				continue
+			}
+			if err != nil {
+				return err
+			}
+			eachRes, err := redis.Strings(redisConn.Do("SInter", key, contrastKey))
+			if err != nil {
+				return err
+			}
+			logger.Debug("Redis SInter :%d , %s SCard: %d\n", len(eachRes), key, num)
+			var sql string
+			if i == 1 {
+				sql = fmt.Sprintf("insert into ob_stat_retention (datetime, appid, r1) values (\"%s\",\"%d\",\"%f\");\n", timeStamp.Format("2006-01-02"), appid, float32(len(eachRes))/float32(num))
+			} else {
+				sql = fmt.Sprintf("update ob_stat_retention set r%d=%f where datetime=\"%s\" and appid=%d;\n", i, float32(len(eachRes))/float32(num), timeStamp.Format("2006-01-02"), appid)
+			}
+			sqlData = append(sqlData, []byte(sql)...)
+		}
+	}
+	r.sqlFileName = time.Now().Format("200601021504") + ".sql"
+	err = utils.WriteFiles("static/"+r.sqlFileName, sqlData)
+	if err != nil {
+		logger.Error("Write Files err:", err)
+		return err
+	}
+	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", r.sqlFileName}...)
+	if err != nil {
+		logger.Error("Redis LPush err:\n", err)
+		return err
+	}
+
+	return nil
+}
+
+// 20200217:RETENTION:4

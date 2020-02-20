@@ -7,26 +7,33 @@
 */
 package utils
 
-import "github.com/gomodule/redigo/redis"
-
-var (
-	DataPool *redis.Pool	// 每日数据，临时数据
-	QueuePool *redis.Pool	// 常驻数据，队列数据
+import (
+	"github.com/gomodule/redigo/redis"
 )
 
+const (
+	redisHost string = "192.168.8.23:8379"
+	queueHost string = "192.168.8.23:8379"
+)
+
+var (
+	DataPool  *redis.Pool // 每日数据，临时数据
+	QueuePool *redis.Pool // 常驻数据，队列数据
+)
 
 //var pool *redis.DataPool //创建redis连接池
 
 func init() {
-	redisHost := "192.168.8.23:8379"
+	logger.Debug("初始化Redis连接\n")
+
 	DataPool = &redis.Pool{ //实例化一个连接池
 		MaxIdle: 32, //最初的连接数量
 		// MaxActive:1000000,    //最大连接数量
-		MaxActive:   1000,   //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
-		IdleTimeout: 300, //连接关闭时间 300秒 （300秒不使用自动关闭）
-		Wait: true,
+		MaxActive:   1000, //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
+		IdleTimeout: 300,  //连接关闭时间 300秒 （300秒不使用自动关闭）
+		Wait:        true,
 		Dial: func() (redis.Conn, error) { //要连接的redis数据库
-			c, err := redis.Dial("tcp", redisHost,redis.DialDatabase(0))
+			c, err := redis.Dial("tcp", Setting.Data.IP + ":" +Setting.Data.Port, redis.DialDatabase(Setting.Data.Db))
 			if err != nil {
 				return nil, err
 			}
@@ -36,11 +43,11 @@ func init() {
 	QueuePool = &redis.Pool{ //实例化一个连接池
 		MaxIdle: 32, //最初的连接数量
 		// MaxActive:1000000,    //最大连接数量
-		MaxActive:   1000,   //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
-		IdleTimeout: 300, //连接关闭时间 300秒 （300秒不使用自动关闭）
-		Wait: true,
+		MaxActive:   1000, //连接池最大连接数量,不确定可以用0（0表示自动定义），按需分配
+		IdleTimeout: 300,  //连接关闭时间 300秒 （300秒不使用自动关闭）
+		Wait:        true,
 		Dial: func() (redis.Conn, error) { //要连接的redis数据库
-			c, err := redis.Dial("tcp", redisHost,redis.DialDatabase(1))
+			c, err := redis.Dial("tcp", Setting.Queue.IP + ":" +Setting.Queue.Port, redis.DialDatabase(Setting.Queue.Db))
 			if err != nil {
 				return nil, err
 			}
@@ -49,3 +56,7 @@ func init() {
 	}
 }
 
+func loadConf(filePath string)  {
+
+
+}

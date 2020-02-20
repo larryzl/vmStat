@@ -17,5 +17,6 @@ test
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-.idea
+.idea/
 /static/
+.idea/workspace.xml

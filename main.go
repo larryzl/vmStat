@@ -9,25 +9,49 @@ package main
 
 import (
 	"os"
+
+	//"os"
 	"time"
 	"vmStat/computed"
 	"vmStat/logging"
+	"vmStat/utils"
 )
+
 var logger logging.Logger
 
 func main() {
 	logger = logging.NewConsoleLogger("debug")
-	logger.Debug(">> 开始运行计算程序\n")
-	s := time.Now()
-	
-	filePath := os.Args[1]
-	if _,err := os.Stat(filePath);err != nil{
-		logger.Debug("读取日志文件出错:%v\n",err)
-		return
+	//
+	//filePath := os.Args[1]
+	//if _,err := os.Stat(filePath);err != nil{
+	//	logger.Debug("读取日志文件出错:%v\n",err)
+	//	return
+	//}
+	//
+	c := computed.New()
+	switch utils.Setting.Mode {
+	case "retention":
+		logger.Debug("开始计算留存率\n")
+		c.Retention()
+	case "once":
+		logger.Debug("开始执行测试模式\n")
+		s := time.Now()
+		err := c.Run(utils.Setting.Logfile)
+		if err != nil {
+			logger.Error("err:%v\n", err)
+			os.Exit(1)
+		}
+		logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
+		os.Exit(0)
+	case "normal":
+		logger.Debug("开始执行生产模式\n")
+		for {
+			s := time.Now()
+			err := c.Run("")
+			if err == nil{
+				logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
+			}
+		}
 	}
-	c := computed.NewResult(filePath)
 
-	c.Run()
-	logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
-	
 }
