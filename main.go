@@ -48,8 +48,10 @@ func main() {
 		for {
 			s := time.Now()
 			err := c.Run("")
-			if err == nil{
+			if err == nil {
 				logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
+			} else {
+				time.Sleep(10 * time.Second)
 			}
 		}
 	}
