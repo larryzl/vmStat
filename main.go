@@ -28,14 +28,16 @@ func main() {
 	//	return
 	//}
 	//
-	c := computed.New()
+
 	switch utils.Setting.Mode {
 	case "retention":
 		logger.Debug("开始计算留存率\n")
+		c := computed.New()
 		c.Retention()
 	case "once":
 		logger.Debug("开始执行测试模式\n")
 		s := time.Now()
+		c := computed.New()
 		err := c.Run(utils.Setting.Logfile)
 		if err != nil {
 			logger.Error("err:%v\n", err)
@@ -47,6 +49,7 @@ func main() {
 		logger.Debug("开始执行生产模式\n")
 		for {
 			s := time.Now()
+			c := computed.New()
 			err := c.Run("")
 			if err == nil {
 				logger.Debug(">> 程序共运行 %v 秒\n", time.Now().Sub(s))
