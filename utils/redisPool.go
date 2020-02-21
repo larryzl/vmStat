@@ -11,11 +11,6 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
-const (
-	redisHost string = "192.168.8.23:8379"
-	queueHost string = "192.168.8.23:8379"
-)
-
 var (
 	DataPool  *redis.Pool // 每日数据，临时数据
 	QueuePool *redis.Pool // 常驻数据，队列数据

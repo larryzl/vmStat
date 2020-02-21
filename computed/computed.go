@@ -30,11 +30,16 @@ const (
 	mapLength              = 100
 )
 
-type Result struct {
+type Computed struct {
 	filePath    string
 	dataPrefix  string
 	hourPrefix  string
 	sqlFileName string
+	timeKeys    []interface{}
+	areaResult  map[string]*baseStatistic
+	areaKeys    []interface{}
+	userResult  map[string]*userStatistic
+	userKeys    []interface{}
 }
 
 // 基础统计信息，uv、pv、ip等
@@ -71,9 +76,14 @@ func newStatisticItem() *baseStatistic {
 	}
 }
 
-// Result 构造方法
-func New() *Result {
-	return &Result{}
+// Computed 构造方法
+func New() *Computed {
+	timeKeys := make([]interface{}, 0, 100)            // 存储时间表字段
+	areaResult := make(map[string]*baseStatistic, 100) // 统计地区表结果
+	areaKeys := make([]interface{}, 0, 100)            // 存储地区表字段
+	userResult := make(map[string]*userStatistic, 100) // 存储新用户结果
+	userKeys := make([]interface{}, 0, 100)            // 存储用户表字段
+	return &Computed{timeKeys: timeKeys, areaResult: areaResult, areaKeys: areaKeys, userResult: userResult, userKeys: userKeys}
 }
 
 var (
@@ -83,11 +93,7 @@ var (
 	redisPool  = utils.DataPool
 	queuePool  = utils.QueuePool
 	timeResult = make(map[string]*baseStatistic, 100) // 统计时间表结果
-	timeKeys   = make([]interface{}, 0, 100)          // 存储时间表字段
-	areaResult = make(map[string]*baseStatistic, 100) // 统计地区表结果
-	areaKeys   = make([]interface{}, 0, 100)          // 存储地区表字段
-	userResult = make(map[string]*userStatistic, 100) // 存储新用户结果
-	userKeys   = make([]interface{}, 0, 100)          // 存储用户表字段
+
 )
 
 func init() {
@@ -102,7 +108,9 @@ func init() {
 	logger.Debug("加载IP库文件完成,位置:%s\n", utils.Setting.IpFile)
 }
 
-func (r *Result) Run(filePath string) (err error) {
+func (this *Computed) Run(filePath string) (err error) {
+	defer queuePool.Close()
+	defer redisPool.Close()
 	if filePath == "" {
 		redisConn := queuePool.Get()
 		defer redisConn.Close()
@@ -124,17 +132,17 @@ func (r *Result) Run(filePath string) (err error) {
 		return
 	}
 	dataPrefixArray := strings.Split(filePath, ".")
-	r.dataPrefix = dataPrefixArray[len(dataPrefixArray)-2][:8]
-	r.hourPrefix = dataPrefixArray[len(dataPrefixArray)-2][:10]
-	r.sqlFileName = dataPrefixArray[len(dataPrefixArray)-2][:12] + ".sql"
+	this.dataPrefix = dataPrefixArray[len(dataPrefixArray)-2][:8]
+	this.hourPrefix = dataPrefixArray[len(dataPrefixArray)-2][:10]
+	this.sqlFileName = dataPrefixArray[len(dataPrefixArray)-2][:12] + ".sql"
 	//defer func() {
 	//	_ = redisPool.Close()
 	//	_ = queuePool.Close()
 	//}()
 	accessData, err := utils.SerData(filePath)
 
-	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: r.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
-	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 r.dataPrefix + ":" + v.Uuid
+	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: this.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
+	uvSlice := make([]interface{}, 0, 1024)     //存储uv字段 this.dataPrefix + ":" + v.Uuid
 
 	pathUvMap := make(map[interface{}]string, 1024)
 	pathUvSlice := make([]interface{}, 0, 1024)
@@ -161,7 +169,7 @@ func (r *Result) Run(filePath string) (err error) {
 
 	// 保存所有appid的切片，将APPID 存储到 日期 的集合中，以供查找该日期所有APPID使用
 	appidSlice := make([]interface{}, 0, 100)
-	appidSlice = append(appidSlice, r.dataPrefix)
+	appidSlice = append(appidSlice, this.dataPrefix)
 
 	appidUid := make(map[string][]interface{}, 1024) // 存储每个APP对应的UID
 
@@ -183,12 +191,12 @@ func (r *Result) Run(filePath string) (err error) {
 		areaFieldKey := v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 		timeFieldKey := v.Appid + ":" + v.Path
 
-		uvKey := r.dataPrefix + ":" + v.Uuid                                      // Redis存储的字段 日期+ uuid
-		pathUvKey := r.dataPrefix + ":" + v.Path + ":" + v.Uuid                   // Redis存储的字段 日期+ path + uuid
-		appUvKey := r.dataPrefix + ":" + v.Appid + ":" + v.Uid                    // Redis存储的字段 日期+ appid + uid
-		pathAppUvKey := r.dataPrefix + ":" + v.Path + ":" + v.Appid + ":" + v.Uid // Redis存储的字段 日期+ path + appid + uid
-		ipKey := r.dataPrefix + ":" + v.Ip                                        // Redis存储的字段 日期+ path + appid + uid
-		appIpKey := r.dataPrefix + ":" + v.Appid + ":" + v.Ip                     // Redis存储的字段 日期+ path + appid + uid
+		uvKey := this.dataPrefix + ":" + v.Uuid                                      // Redis存储的字段 日期+ uuid
+		pathUvKey := this.dataPrefix + ":" + v.Path + ":" + v.Uuid                   // Redis存储的字段 日期+ path + uuid
+		appUvKey := this.dataPrefix + ":" + v.Appid + ":" + v.Uid                    // Redis存储的字段 日期+ appid + uid
+		pathAppUvKey := this.dataPrefix + ":" + v.Path + ":" + v.Appid + ":" + v.Uid // Redis存储的字段 日期+ path + appid + uid
+		ipKey := this.dataPrefix + ":" + v.Ip                                        // Redis存储的字段 日期+ path + appid + uid
+		appIpKey := this.dataPrefix + ":" + v.Appid + ":" + v.Ip                     // Redis存储的字段 日期+ path + appid + uid
 
 		if _, ok := userMap[v.Uuid]; !ok { //判断uuid是否出现过
 			userMap[v.Uuid] = v.Appid
@@ -209,7 +217,7 @@ func (r *Result) Run(filePath string) (err error) {
 			appidSlice = append(appidSlice, v.Appid)
 
 			appidUid[v.Appid] = make([]interface{}, 1, 100)
-			appidUid[v.Appid][0] = r.dataPrefix + ":RETENTION:" + v.Appid
+			appidUid[v.Appid][0] = this.dataPrefix + ":RETENTION:" + v.Appid
 		}
 		appidUid[v.Appid] = append(appidUid[v.Appid], v.Uid)
 
@@ -241,18 +249,18 @@ func (r *Result) Run(filePath string) (err error) {
 
 		if _, ok := timeResult[timeFieldKey]; !ok {
 			timeResult[timeFieldKey] = newStatisticItem()
-			timeKeys = append(timeKeys, r.hourPrefix+":"+timeFieldKey)
+			this.timeKeys = append(this.timeKeys, this.hourPrefix+":"+timeFieldKey)
 		}
 		timeResult[timeFieldKey].pv++
-		if _, ok := areaResult[areaFieldKey]; !ok {
-			areaResult[areaFieldKey] = newStatisticItem()
-			areaKeys = append(areaKeys, r.hourPrefix+":"+areaFieldKey)
+		if _, ok := this.areaResult[areaFieldKey]; !ok {
+			this.areaResult[areaFieldKey] = newStatisticItem()
+			this.areaKeys = append(this.areaKeys, this.hourPrefix+":"+areaFieldKey)
 		}
-		areaResult[areaFieldKey].pv++
+		this.areaResult[areaFieldKey].pv++
 
-		if _, ok := userResult[v.Appid]; !ok {
-			userResult[v.Appid] = newUserStatistic()
-			userKeys = append(userKeys, r.hourPrefix+":NEW_USER:"+v.Appid)
+		if _, ok := this.userResult[v.Appid]; !ok {
+			this.userResult[v.Appid] = newUserStatistic()
+			this.userKeys = append(this.userKeys, this.hourPrefix+":NEW_USER:"+v.Appid)
 		}
 
 	}
@@ -267,7 +275,6 @@ func (r *Result) Run(filePath string) (err error) {
 			logger.Error("redis SAdd err:%v\n", err)
 		}
 	}(appidSlice)
-
 	//
 	wg.Add(1)
 	go func() {
@@ -285,35 +292,37 @@ func (r *Result) Run(filePath string) (err error) {
 	}()
 	wg.Add(8)
 	// 计算数据
-	go r.newUserCalculation(userMap, uuidSlice, "user")
-	go r.newUserCalculation(appUserMap, uidSlice, "app_user")
-	go r.basicInfoCalculation(uvSlice, uvMap, "uv")
-	go r.basicInfoCalculation(pathUvSlice, pathUvMap, "path_uv")
-	go r.basicInfoCalculation(appUvSlice, appUvMap, "app_uv")
-	go r.basicInfoCalculation(pathAppUvSlice, pathAppUvMap, "path_app_uv")
-	go r.basicInfoCalculation(ipSlice, ipMap, "ip")
-	go r.basicInfoCalculation(appIpSlice, appIpMap, "app_ip")
+	go this.newUserCalculation(userMap, uuidSlice, "user")
+	go this.newUserCalculation(appUserMap, uidSlice, "app_user")
+	go this.basicInfoCalculation(uvSlice, uvMap, "uv")
+	go this.basicInfoCalculation(pathUvSlice, pathUvMap, "path_uv")
+	go this.basicInfoCalculation(appUvSlice, appUvMap, "app_uv")
+	go this.basicInfoCalculation(pathAppUvSlice, pathAppUvMap, "path_app_uv")
+	go this.basicInfoCalculation(ipSlice, ipMap, "ip")
+	go this.basicInfoCalculation(appIpSlice, appIpMap, "app_ip")
 	wg.Wait()
 	wg.Add(3)
 	// 生成sql文件
-	go r.generateTimeSql(timeResult, timeKeys, "time")
-	go r.generateTimeSql(areaResult, areaKeys, "area")
-	go r.generateUserSql(userResult, userKeys)
+	go this.generateTimeSql(timeResult, this.timeKeys, "time")
+	go this.generateTimeSql(this.areaResult, this.areaKeys, "area")
+	go this.generateUserSql(this.userResult, this.userKeys)
 	wg.Wait()
 
 	// 写入消息队列
-	redisConn := queuePool.Get()
-	defer redisConn.Close()
-	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", r.sqlFileName}...)
-	if err != nil {
-		logger.Error("Redis LPush err:\n", err)
-		return
-	}
+	func() {
+		redisConn := queuePool.Get()
+		defer redisConn.Close()
+		_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", this.sqlFileName}...)
+		if err != nil {
+			logger.Error("Redis LPush err:\n", err)
+			return
+		}
+	}()
 	return nil
 }
 
 // uv/pv/app_uv 等信息计算
-func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string, kind string) {
+func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]string, kind string) {
 	redisConn := redisPool.Get()
 	defer func() {
 		wg.Done()
@@ -331,14 +340,14 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 		for i, v := range reply {
 			if v == 0 {
 				/*
-					s[i] = uvKey == r.dataPrefix + ":" + v.Uuid
+					s[i] = uvKey == this.dataPrefix + ":" + v.Uuid
 					m[s[i]] = areaFieldKey == v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 					时间表关键字 v.Appid + ":" + v.Path
 					地区表关键字 areaFieldKey
 				*/
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].uv++
-				areaResult[m[s[i]]].uv++
+				this.areaResult[m[s[i]]].uv++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -347,7 +356,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 			if v == 0 {
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].pathUv++
-				areaResult[m[s[i]]].pathUv++
+				this.areaResult[m[s[i]]].pathUv++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -356,7 +365,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 			if v == 0 {
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].appUv++
-				areaResult[m[s[i]]].appUv++
+				this.areaResult[m[s[i]]].appUv++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -365,7 +374,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 			if v == 0 {
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].pathAppUv++
-				areaResult[m[s[i]]].pathAppUv++
+				this.areaResult[m[s[i]]].pathAppUv++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -374,7 +383,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 			if v == 0 {
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].ip++
-				areaResult[m[s[i]]].ip++
+				this.areaResult[m[s[i]]].ip++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -383,7 +392,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 			if v == 0 {
 				key := strings.Join(strings.Split(m[s[i]], ":")[:2], ":")
 				timeResult[key].appIp++
-				areaResult[m[s[i]]].appIp++
+				this.areaResult[m[s[i]]].appIp++
 				redisNewKeys = append(redisNewKeys, []interface{}{s[i], 1}...)
 			}
 		}
@@ -402,7 +411,7 @@ func (r *Result) basicInfoCalculation(s []interface{}, m map[interface{}]string,
 }
 
 // 格式化时间
-func (r *Result) timeFormat(s string) (string, error) {
+func (this *Computed) timeFormat(s string) (string, error) {
 	t, err := time.Parse("2006010215", s)
 	if err != nil {
 		logger.Error("Format datetime err:", err)
@@ -412,7 +421,7 @@ func (r *Result) timeFormat(s string) (string, error) {
 }
 
 // 新用户数据计算
-func (r *Result) newUserCalculation(m map[string]string, slice []interface{}, s string) {
+func (this *Computed) newUserCalculation(m map[string]string, slice []interface{}, s string) {
 	/*
 		m = {appid:[uuid....]}
 		m = {appid:[uid....]}
@@ -450,14 +459,14 @@ func (r *Result) newUserCalculation(m map[string]string, slice []interface{}, s 
 	case "user":
 		for k, v := range m {
 			if _, ok := redisRes[k]; !ok {
-				userResult[v].user++
+				this.userResult[v].user++
 				newUserDump = append(newUserDump, []byte(k+"\n")...)
 			}
 		}
 	case "app_user":
 		for k, v := range m {
 			if _, ok := redisRes[k]; !ok {
-				userResult[v].appUser++
+				this.userResult[v].appUser++
 				newUserDump = append(newUserDump, []byte(k+"\n")...)
 			}
 		}
@@ -475,7 +484,7 @@ func (r *Result) newUserCalculation(m map[string]string, slice []interface{}, s 
 }
 
 // 生成 ob_stat_time/ob_stat_time_area 表sql文件
-func (r *Result) generateTimeSql(result map[string]*baseStatistic, keys []interface{}, kind string) {
+func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []interface{}, kind string) {
 
 	redisConn := redisPool.Get()
 	defer func() {
@@ -483,7 +492,7 @@ func (r *Result) generateTimeSql(result map[string]*baseStatistic, keys []interf
 		redisConn.Close()
 	}()
 	sqlData := ""
-	datetimeField, _ := r.timeFormat(r.hourPrefix)
+	datetimeField, _ := this.timeFormat(this.hourPrefix)
 	newKeys := make([]interface{}, 0, 100)
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
 	if err != nil {
@@ -533,7 +542,7 @@ func (r *Result) generateTimeSql(result map[string]*baseStatistic, keys []interf
 			return
 		}
 	}
-	err = utils.WriteFiles("static/"+r.sqlFileName, []byte(sqlData))
+	err = utils.WriteFiles("static/"+this.sqlFileName, []byte(sqlData))
 	if err != nil {
 		logger.Error("Write Files err:", err)
 		return
@@ -541,7 +550,7 @@ func (r *Result) generateTimeSql(result map[string]*baseStatistic, keys []interf
 }
 
 // 生成 ob_stat_user 表 sql文件
-func (r *Result) generateUserSql(result map[string]*userStatistic, keys []interface{}) {
+func (this *Computed) generateUserSql(result map[string]*userStatistic, keys []interface{}) {
 	redisConn := redisPool.Get()
 
 	defer func() {
@@ -550,7 +559,7 @@ func (r *Result) generateUserSql(result map[string]*userStatistic, keys []interf
 	}()
 
 	sqlData := ""
-	datetimeField, _ := r.timeFormat(r.hourPrefix)
+	datetimeField, _ := this.timeFormat(this.hourPrefix)
 	newKeys := make([]interface{}, 0, 100)
 
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
@@ -578,14 +587,14 @@ func (r *Result) generateUserSql(result map[string]*userStatistic, keys []interf
 		}
 	}
 
-	err = utils.WriteFiles("static/"+r.sqlFileName, []byte(sqlData))
+	err = utils.WriteFiles("static/"+this.sqlFileName, []byte(sqlData))
 	if err != nil {
 		logger.Error("Write Files err:", err)
 		return
 	}
 }
 
-func (r *Result) Retention() (err error) {
+func (this *Computed) Retention() (err error) {
 
 	fmt.Println("执行留存率计算")
 	/*
@@ -633,18 +642,18 @@ func (r *Result) Retention() (err error) {
 			if i == 1 {
 				sql = fmt.Sprintf("insert into ob_stat_retention (datetime, appid, r1) values (\"%s\",\"%d\",\"%f\");\n", timeStamp.Format("2006-01-02"), appid, float32(len(eachRes))/float32(num))
 			} else {
-				sql = fmt.Sprintf("update ob_stat_retention set r%d=%f where datetime=\"%s\" and appid=%d;\n", i, float32(len(eachRes))/float32(num), timeStamp.Format("2006-01-02"), appid)
+				sql = fmt.Sprintf("update ob_stat_retention set this%d=%f where datetime=\"%s\" and appid=%d;\n", i, float32(len(eachRes))/float32(num), timeStamp.Format("2006-01-02"), appid)
 			}
 			sqlData = append(sqlData, []byte(sql)...)
 		}
 	}
-	r.sqlFileName = time.Now().Format("200601021504") + ".sql"
-	err = utils.WriteFiles("static/"+r.sqlFileName, sqlData)
+	this.sqlFileName = time.Now().Format("200601021504") + ".sql"
+	err = utils.WriteFiles("static/"+this.sqlFileName, sqlData)
 	if err != nil {
 		logger.Error("Write Files err:", err)
 		return err
 	}
-	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", r.sqlFileName}...)
+	_, err = redisConn.Do("LPush", []interface{}{"MYSQL_QUEUE", this.sqlFileName}...)
 	if err != nil {
 		logger.Error("Redis LPush err:\n", err)
 		return err
