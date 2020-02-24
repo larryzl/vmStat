@@ -109,8 +109,8 @@ func init() {
 }
 
 func (this *Computed) Run(filePath string) (err error) {
-	defer queuePool.Close()
-	defer redisPool.Close()
+	//defer queuePool.Close()
+	//defer redisPool.Close()
 	if filePath == "" {
 		redisConn := queuePool.Get()
 		defer redisConn.Close()
@@ -323,6 +323,7 @@ func (this *Computed) Run(filePath string) (err error) {
 
 // uv/pv/app_uv 等信息计算
 func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]string, kind string) {
+	logger.Debug("正在计算:%s\n",kind)
 	redisConn := redisPool.Get()
 	defer func() {
 		wg.Done()
@@ -330,10 +331,10 @@ func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]st
 	}()
 	// 需要更新到redis中的key
 	redisNewKeys := make([]interface{}, 0, 100)
-
+	logger.Debug("Redis MGet 数量:%d\n",len(s))
 	reply, err := redis.Ints(redisConn.Do("MGet", s...))
 	if err != nil {
-		logger.Error("Redis MGet Err:", err)
+		logger.Error("Redis MGet Err:%v\n", err)
 	}
 	switch kind {
 	case "uv":

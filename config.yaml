@@ -18,6 +18,8 @@ log:
   path: /Users/lei/workspace/gitlab/vmatch-stats/test_logs
 # ip库文件路径
 ipFile: /Users/lei/go/src/vmStat/ip2region.db
+# 日志级别
+logLevel: debug
 
 
 
