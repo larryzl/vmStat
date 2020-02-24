@@ -177,6 +177,8 @@ func (this *Computed) Run(filePath string) (err error) {
 		logger.Error("序列化数据错误:%v\n", err)
 		return
 	}
+	n := 0
+	logger.Debug("开始整理日志\n")
 	for _, v := range accessData {
 		if v.Uid == "" || v.Uuid == "" {
 			continue
@@ -187,7 +189,7 @@ func (this *Computed) Run(filePath string) (err error) {
 			logger.Error("解析IP地址错误:", err)
 			continue
 		}
-
+		n++
 		areaFieldKey := v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 		timeFieldKey := v.Appid + ":" + v.Path
 
@@ -264,6 +266,7 @@ func (this *Computed) Run(filePath string) (err error) {
 		}
 
 	}
+	logger.Debug("日志整理完毕，共整理%d条日志，开始计算\n",n)
 	// 将每个appid 下的 uid写入到redis 集合中，key格式 20200120:
 	wg.Add(1)
 	go func(appidSlice []interface{}) {
@@ -323,7 +326,6 @@ func (this *Computed) Run(filePath string) (err error) {
 
 // uv/pv/app_uv 等信息计算
 func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]string, kind string) {
-	logger.Debug("正在计算:%s\n",kind)
 	redisConn := redisPool.Get()
 	defer func() {
 		wg.Done()
@@ -331,7 +333,7 @@ func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]st
 	}()
 	// 需要更新到redis中的key
 	redisNewKeys := make([]interface{}, 0, 100)
-	logger.Debug("Redis MGet 数量:%d\n",len(s))
+	logger.Debug("%s Redis MGet 数量:%d\n",kind,len(s))
 	reply, err := redis.Ints(redisConn.Do("MGet", s...))
 	if err != nil {
 		logger.Error("Redis MGet Err:%v\n", err)
