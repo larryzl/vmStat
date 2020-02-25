@@ -333,7 +333,6 @@ func (this *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]st
 	}()
 	// 需要更新到redis中的key
 	redisNewKeys := make([]interface{}, 0, 100)
-	logger.Debug("%s Redis MGet 数量:%d\n",kind,len(s))
 	reply, err := redis.Ints(redisConn.Do("MGet", s...))
 	if err != nil {
 		logger.Error("Redis MGet Err:%v\n", err)
@@ -447,7 +446,7 @@ func (this *Computed) newUserCalculation(m map[string]string, slice []interface{
 	// 2. 计算交集
 	redisInter, err := redis.Strings(redisConn.Do("SInter", s, s+"_temp"))
 	if err != nil {
-		logger.Error("Redis SInter err:%v\n", err)
+		logger.Error("%s Redis SInter err:%v\n", s,err)
 		return
 	}
 	//fmt.Println("Redis Inter:", redisInter)
@@ -499,7 +498,7 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 	newKeys := make([]interface{}, 0, 100)
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
 	if err != nil {
-		logger.Error("Redis MGet err:", err)
+		logger.Error("%s Redis MGet err:\n",kind, err)
 		return
 	}
 	switch kind {
@@ -567,7 +566,7 @@ func (this *Computed) generateUserSql(result map[string]*userStatistic, keys []i
 
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
 	if err != nil {
-		logger.Error("Redis MGet err:", err)
+		logger.Error("Redis MGet err:%v\n", err)
 		return
 	}
 	for i, v := range res {
@@ -585,14 +584,16 @@ func (this *Computed) generateUserSql(result map[string]*userStatistic, keys []i
 	if len(newKeys) != 0 {
 		_, err = redisConn.Do("MSet", newKeys...)
 		if err != nil {
-			logger.Error("Redis MSet err:", err)
+			logger.Error("Redis MSet err:%v\n", err)
+			logger.Error("new Keys :%v\n",newKeys)
 			return
 		}
 	}
 
 	err = utils.WriteFiles("static/"+this.sqlFileName, []byte(sqlData))
 	if err != nil {
-		logger.Error("Write Files err:", err)
+
+		logger.Error("Write Files err:%v \n", err)
 		return
 	}
 }
