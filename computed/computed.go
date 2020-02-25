@@ -526,7 +526,7 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 			sPtr := result[strings.Join(areaFieldKey[1:], ":")]
 			if v == 0 {
 				sql := fmt.Sprintf("INSERT INTO %s (datetime, country,province,city,path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES (\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\");\n",
-					areaTableName, datetimeField, areaFieldKey[2], areaFieldKey[3], areaFieldKey[4],
+					areaTableName, datetimeField, areaFieldKey[3], areaFieldKey[4], areaFieldKey[5],
 					areaFieldKey[2], areaFieldKey[1], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp)
 				sqlData += sql
 				newKeys = append(newKeys, []interface{}{keys[i], 1}...)
