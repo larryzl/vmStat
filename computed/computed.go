@@ -514,7 +514,7 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 				sqlData += sql
 				newKeys = append(newKeys, []interface{}{keys[i], 1}...)
 			} else {
-				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d, path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE dattetime=\"%s\" AND path=\"%s\" AND appid=\"%s\";\n",
+				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d, path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE datetime=\"%s\" AND path=\"%s\" AND appid=\"%s\";\n",
 					timeTableName, sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp, datetimeField, timeFieldKey[2], timeFieldKey[1])
 				sqlData += sql
 			}
@@ -531,7 +531,7 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 				sqlData += sql
 				newKeys = append(newKeys, []interface{}{keys[i], 1}...)
 			} else {
-				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d,path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE dattetime=\"%s\" AND path=\"%s\" AND appid=\"%s\" AND country=\"%s\" AND province=\"%s\" AND city=\"%s\";\n",
+				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d,path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE datetime=\"%s\" AND path=\"%s\" AND appid=\"%s\" AND country=\"%s\" AND province=\"%s\" AND city=\"%s\";\n",
 					areaTableName, sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp, datetimeField, areaFieldKey[2], areaFieldKey[1], areaFieldKey[3], areaFieldKey[4], areaFieldKey[5])
 				sqlData += sql
 			}

@@ -10,6 +10,13 @@ queue:
     ip: 192.168.8.23
     port: 8379
     db: 1
+mysql:
+  ip:
+  port:
+  username:
+  password:
+  database:
+
 # 静态文件
 static:
   path: ./static
