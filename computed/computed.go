@@ -598,6 +598,7 @@ func (this *Computed) generateUserSql(result map[string]*userStatistic, keys []i
 	}
 }
 
+// 生成留存率 sql文件
 func (this *Computed) Retention() (err error) {
 
 	fmt.Println("执行留存率计算")
@@ -651,7 +652,7 @@ func (this *Computed) Retention() (err error) {
 			sqlData = append(sqlData, []byte(sql)...)
 		}
 	}
-	this.sqlFileName = time.Now().Format("200601021504") + ".sql"
+	this.sqlFileName = time.Now().Format("200601021504") + "_retention_.sql"
 	err = utils.WriteFiles("static/"+this.sqlFileName, sqlData)
 	if err != nil {
 		logger.Error("Write Files err:", err)
