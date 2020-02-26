@@ -4,6 +4,8 @@
     <list default="true" id="96c31648-a6ae-4a0a-a7cc-c70c197c1664" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/computed/computed.go" beforeDir="false" afterPath="$PROJECT_DIR$/computed/computed.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/app_user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/app_user.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/static/user.csv" beforeDir="false" afterPath="$PROJECT_DIR$/static/user.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

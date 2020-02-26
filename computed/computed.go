@@ -494,6 +494,8 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 		redisConn.Close()
 	}()
 	sqlData := ""
+
+
 	datetimeField, _ := this.timeFormat(this.hourPrefix)
 	newKeys := make([]interface{}, 0, 100)
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
@@ -503,15 +505,17 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 	}
 	switch kind {
 	case "time":
+		insertData := "INSERT INTO " + timeTableName + " (datetime, path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES "
+		insertSlice := make([]string,0,100)
 		for i, v := range res {
 			timeFieldKey := strings.Split(keys[i].(string), ":")
 
 			//timeFieldKey := v.Appid + ":" + v.Path
 			sPtr := result[strings.Join(timeFieldKey[1:], ":")]
 			if v == 0 {
-				sql := fmt.Sprintf("INSERT INTO %s (datetime, path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES (\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\");\n",
-					timeTableName, datetimeField, timeFieldKey[2], timeFieldKey[1], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp)
-				sqlData += sql
+				sql := fmt.Sprintf("(\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\")",
+					datetimeField, timeFieldKey[2], timeFieldKey[1], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp)
+				insertSlice = append(insertSlice,sql)
 				newKeys = append(newKeys, []interface{}{keys[i], 1}...)
 			} else {
 				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d, path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE datetime=\"%s\" AND path=\"%s\" AND appid=\"%s\";\n",
@@ -519,22 +523,31 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 				sqlData += sql
 			}
 		}
+		if len(insertSlice) > 0{
+			sqlData += insertData + strings.Join(insertSlice,",") + ";\n"
+		}
 	case "area":
+		insertData := "INSERT INTO " + areaTableName + "(datetime, country,province,city,path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES "
+		insertSlice := make([]string,0,100)
 		for i, v := range res {
 			areaFieldKey := strings.Split(keys[i].(string), ":")
 			//areaFieldKey := time + v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 			sPtr := result[strings.Join(areaFieldKey[1:], ":")]
 			if v == 0 {
-				sql := fmt.Sprintf("INSERT INTO %s (datetime, country,province,city,path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES (\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\");\n",
-					areaTableName, datetimeField, areaFieldKey[3], areaFieldKey[4], areaFieldKey[5],
+				sql := fmt.Sprintf( "(\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\",\"%d\")",
+					datetimeField, areaFieldKey[3], areaFieldKey[4], areaFieldKey[5],
 					areaFieldKey[2], areaFieldKey[1], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp)
-				sqlData += sql
+				insertSlice = append(insertSlice,sql)
+				//sqlData += sql
 				newKeys = append(newKeys, []interface{}{keys[i], 1}...)
 			} else {
 				sql := fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d,path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE datetime=\"%s\" AND path=\"%s\" AND appid=\"%s\" AND country=\"%s\" AND province=\"%s\" AND city=\"%s\";\n",
 					areaTableName, sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp, datetimeField, areaFieldKey[2], areaFieldKey[1], areaFieldKey[3], areaFieldKey[4], areaFieldKey[5])
 				sqlData += sql
 			}
+		}
+		if len(insertSlice) > 0{
+			sqlData += insertData + strings.Join(insertSlice,",") + ";\n"
 		}
 	}
 	if len(newKeys) != 0 {
@@ -569,17 +582,24 @@ func (this *Computed) generateUserSql(result map[string]*userStatistic, keys []i
 		logger.Error("Redis MGet err:%v\n", err)
 		return
 	}
+	insertData := "INSERT INTO " + newUserTableName + " (datetime,appid,users,app_users) VALUES"
+	insertSlice := make([]string,0,100)
 	for i, v := range res {
 		userFieldKey := strings.Split(keys[i].(string), ":")
 		sPtr := result[userFieldKey[2]]
 		if v == 0 {
-			sql := fmt.Sprintf("INSERT INTO %s(datetime,appid,users,app_users) VALUES(\"%s\",\"%s\",\"%d\",\"%d\");\n", newUserTableName, datetimeField, userFieldKey[2], sPtr.user, sPtr.appUser)
+			sql := fmt.Sprintf("(\"%s\",\"%s\",\"%d\",\"%d\")",  datetimeField, userFieldKey[2], sPtr.user, sPtr.appUser)
 			newKeys = append(newKeys, []interface{}{keys[i], 1}...)
-			sqlData += sql
+			//sqlData += sql
+			insertSlice = append(insertSlice, sql)
+
 		} else {
 			sql := fmt.Sprintf("UPDATE %s SET users=users+%d,app_users=app_users+%d WHERE datetime=\"%s\" AND appid=\"%s\";\n", newUserTableName, sPtr.user, sPtr.appUser, datetimeField, userFieldKey[2])
 			sqlData += sql
 		}
+	}
+	if len(insertSlice) > 0{
+		sqlData += insertData + strings.Join(insertSlice,",") + ";\n"
 	}
 	if len(newKeys) != 0 {
 		_, err = redisConn.Do("MSet", newKeys...)
