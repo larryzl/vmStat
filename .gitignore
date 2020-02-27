@@ -17,6 +17,9 @@ config.yaml
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
-.idea/
-/static/
+/.idea/.*
+static/
+static/user.csv
+vmStat
 .idea/workspace.xml
+*.csv
