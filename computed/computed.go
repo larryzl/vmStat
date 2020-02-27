@@ -500,7 +500,8 @@ func (this *Computed) generateTimeSql(result map[string]*baseStatistic, keys []i
 	newKeys := make([]interface{}, 0, 100)
 	res, err := redis.Ints(redisConn.Do("MGet", keys...))
 	if err != nil {
-		logger.Error("%s Redis MGet err:\n",kind, err)
+		logger.Debug("Redis MGet keys:%v\n",keys)
+		logger.Error("%s Redis MGet err:%v\n",kind, err)
 		return
 	}
 	switch kind {
