@@ -31,6 +31,19 @@ type Redis struct {
 	Port string `yaml:"port"`
 	Db   int    `yaml:"db"`
 }
+type Mysql struct {
+	IP       string `yaml:"ip"`
+	Port     string `yaml:"port"`
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+	Database string `yaml:"database"`
+}
+type Log struct {
+	Path string `yaml:"path"`
+}
+type Static struct {
+	Path string `yaml:"path"`
+}
 
 type Config struct {
 	Data struct {
@@ -39,12 +52,10 @@ type Config struct {
 	Queue struct {
 		Redis
 	}
-	Log struct {
-		Path string `yaml:"path"`
-	}
-	Static struct {
-		Path string `yaml:"path"`
-	}
+	Log
+	Mysql
+	Static
+
 	Mode    string
 	Logfile string
 	IpFile  string `yaml:"ipFile"`
@@ -69,7 +80,7 @@ func init() {
 	} else if v {
 		fmt.Println("vmStat version: vmStat/0.1.0")
 		os.Exit(0)
-	}  else {
+	} else {
 		data, _ := ReadFilesLines(c)
 		// 加载配置文件
 		err := yaml.Unmarshal(data, &Setting)
@@ -80,7 +91,7 @@ func init() {
 		}
 		if r {
 			Setting.Mode = "retention"
-		}else if f != ""{
+		} else if f != "" {
 			Setting.Mode = "once"
 			Setting.Logfile = f
 		} else {
