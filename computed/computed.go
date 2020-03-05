@@ -40,7 +40,6 @@ type Computed struct {
 	areaResult  map[string]*baseStatistic
 	timeResult  map[string]*baseStatistic
 	userResult  map[string]*userStatistic
-	userKeys    []interface{}
 }
 
 // 基础统计信息，uv、pv、ip等
@@ -86,8 +85,7 @@ func New() *Computed {
 	timeResult := make(map[string]*baseStatistic, 100) // 统计时间表结果
 	areaResult := make(map[string]*baseStatistic, 100) // 统计地区表结果
 	userResult := make(map[string]*userStatistic, 100) // 存储新用户结果
-	userKeys := make([]interface{}, 0, 100)            // 存储用户表字段
-	return &Computed{areaResult: areaResult, userResult: userResult, userKeys: userKeys, timeResult: timeResult}
+	return &Computed{areaResult: areaResult, userResult: userResult, timeResult: timeResult}
 }
 
 var (
@@ -144,6 +142,8 @@ func (c *Computed) Run(filePath string) (err error) {
 
 	timeKeys := make([]interface{}, 0, 100) // 存储时间表字段,作为redis的key 标记已经有过记录
 	areaKeys := make([]interface{}, 0, 100) // 存储地区表字段
+	userKeys := make([]interface{}, 0, 100) // 存储用户表字段
+
 	accessData, err := utils.SerData(filePath)
 
 	uvMap := make(map[interface{}]string, 1024) // 存储uv记录 key: c.dataPrefix + ":" + v.Uuid value: v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
@@ -268,7 +268,8 @@ func (c *Computed) Run(filePath string) (err error) {
 
 		if _, ok := c.userResult[v.Appid]; !ok {
 			c.userResult[v.Appid] = newUserStatistic()
-			c.userKeys = append(c.userKeys, c.hourPrefix+":NEW_USER:"+v.Appid)
+			dayPrefix, _ := c.timeFormat(c.hourPrefix, "day")
+			userKeys = append(userKeys, dayPrefix+":NEW_USER:"+v.Appid)
 		}
 
 	}
@@ -315,7 +316,7 @@ func (c *Computed) Run(filePath string) (err error) {
 	// 生成sql文件
 	go c.generateNormalSql(timeKeys, "time")
 	go c.generateNormalSql(areaKeys, "area")
-	go c.generateNormalSql(c.userKeys, "user")
+	go c.generateNormalSql(userKeys, "user")
 	wg.Wait()
 
 	// 写入消息队列
@@ -616,9 +617,9 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 			userFieldKey := strings.Split(keys[i].(string), ":")
 			sPtr := c.userResult[userFieldKey[2]]
 			if v == 0 {
-				insertData = append(insertData, []interface{}{datetimeField,userFieldKey[2],sPtr.user,sPtr.appUser})
+				insertData = append(insertData, []interface{}{datetimeField, userFieldKey[2], sPtr.user, sPtr.appUser})
 				newKeys = append(newKeys, keys[i])
-			}else{
+			} else {
 				updateSqlData += fmt.Sprintf("UPDATE %s SET users=users+%d,app_users=app_users+%d WHERE id=%d;\n", newUserTableName, sPtr.user, sPtr.appUser, v)
 			}
 		}
@@ -630,9 +631,6 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 		return
 	}
 }
-
-
-
 
 // 生成留存率 sql文件
 func (c *Computed) Retention() (err error) {
