@@ -19,12 +19,14 @@ import (
 var Setting = Config{}
 
 var (
-	h bool
-	v bool
-	r bool
-	c string
-	f string
+	h    bool
+	v    bool
+	r    bool
+	stop bool
+	c    string
+	f    string
 )
+const PID  = "/var/run/vmStat.pid"
 
 type Redis struct {
 	IP   string `yaml:"ip"`
@@ -66,6 +68,7 @@ func init() {
 
 	flag.BoolVar(&v, "v", false, "show version and exit")
 	flag.BoolVar(&r, "r", false, "calculate 7-day retention rate")
+	flag.BoolVar(&stop, "stop", false, "stop vmStat process")
 
 	// 注意 `signal`。默认是 -s string，有了 `signal` 之后，变为 -s signal
 	flag.StringVar(&c, "c", "config.yaml", "set configuration `file`")
@@ -80,6 +83,7 @@ func init() {
 	} else if v {
 		fmt.Println("vmStat version: vmStat/0.1.0")
 		os.Exit(0)
+
 	} else {
 		data, _ := ReadFilesLines(c)
 		// 加载配置文件

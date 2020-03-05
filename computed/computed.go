@@ -198,12 +198,12 @@ func (c *Computed) Run(filePath string) (err error) {
 		areaFieldKey := v.Appid + ":" + v.Path + ":" + ipInfo.Country + ":" + ipInfo.Province + ":" + ipInfo.City
 		timeFieldKey := v.Appid + ":" + v.Path
 
-		uvKey := c.dataPrefix + ":UV:" + v.Uuid                                      // Redis存储的字段 日期+ uuid
-		pathUvKey := c.dataPrefix + ":PUV:" + v.Path + ":" + v.Uuid                   // Redis存储的字段 日期+ path + uuid
-		appUvKey := c.dataPrefix + ":AUV:" + v.Appid + ":" + v.Uid                    // Redis存储的字段 日期+ appid + uid
+		uvKey := c.dataPrefix + ":UV:" + v.Uuid                                        // Redis存储的字段 日期+ uuid
+		pathUvKey := c.dataPrefix + ":PUV:" + v.Path + ":" + v.Uuid                    // Redis存储的字段 日期+ path + uuid
+		appUvKey := c.dataPrefix + ":AUV:" + v.Appid + ":" + v.Uid                     // Redis存储的字段 日期+ appid + uid
 		pathAppUvKey := c.dataPrefix + ":PAUV:" + v.Path + ":" + v.Appid + ":" + v.Uid // Redis存储的字段 日期+ path + appid + uid
-		ipKey := c.dataPrefix + ":IP:" + v.Ip                                        // Redis存储的字段 日期+ path + appid + uid
-		appIpKey := c.dataPrefix + ":AIP:" + v.Appid + ":" + v.Ip                     // Redis存储的字段 日期+ path + appid + uid
+		ipKey := c.dataPrefix + ":IP:" + v.Ip                                          // Redis存储的字段 日期+ path + appid + uid
+		appIpKey := c.dataPrefix + ":AIP:" + v.Appid + ":" + v.Ip                      // Redis存储的字段 日期+ path + appid + uid
 
 		if _, ok := userMap[v.Uuid]; !ok { //判断uuid是否出现过
 			userMap[v.Uuid] = v.Appid
@@ -315,7 +315,7 @@ func (c *Computed) Run(filePath string) (err error) {
 	// 生成sql文件
 	go c.generateNormalSql(timeKeys, "time")
 	go c.generateNormalSql(areaKeys, "area")
-	go c.generateUserSql(c.userResult, c.userKeys)
+	go c.generateNormalSql(c.userKeys, "user")
 	wg.Wait()
 
 	// 写入消息队列
@@ -406,7 +406,7 @@ func (c *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]strin
 			}
 		}
 	}
-	logger.Debug("%v:redisNewKeys length:%d\n", kind, len(redisNewKeys)/2)
+	//logger.Debug("%v:redisNewKeys length:%d\n", kind, len(redisNewKeys)/2)
 	if len(redisNewKeys) == 0 {
 		return
 	} else {
@@ -433,7 +433,6 @@ func (c *Computed) mysqlInsert(insertPrepare string, insertData [][]interface{},
 	var redisData = make([]interface{}, 0, 100)
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", utils.Setting.Mysql.Username, utils.Setting.Mysql.Password, utils.Setting.Mysql.IP, utils.Setting.Mysql.Port, utils.Setting.Mysql.Database)
-	fmt.Println(dsn)
 	dbw := DbWorker{Dsn: dsn}
 	// 建立连接
 	db, err := sql.Open("mysql", dbw.Dsn)
@@ -466,20 +465,24 @@ func (c *Computed) mysqlInsert(insertPrepare string, insertData [][]interface{},
 		redisData = append(redisData, results[i])
 	}
 	// 将新key写入redis
-	redisConn.Do("MSet", redisData...)
+	_, _ = redisConn.Do("MSet", redisData...)
 
-	fmt.Println("Insert row:", len(keys), "用时:", end.Sub(start).Seconds())
+	logger.Debug("MySQL Insert rows:%d used time:%f\n", len(keys), end.Sub(start).Seconds())
 	return nil
 }
 
 // 格式化时间
-func (c *Computed) timeFormat(s string) (string, error) {
+func (c *Computed) timeFormat(s string, k string) (string, error) {
 	t, err := time.Parse("2006010215", s)
 	if err != nil {
 		logger.Error("Format datetime err:", err)
 		return "", err
 	}
-	return t.Format("2006-01-02 15:00:00"), nil
+	if k == "day" {
+		return t.Format("2006-01-02"), nil
+	} else {
+		return t.Format("2006-01-02 15:00:00"), nil
+	}
 }
 
 // 新用户数据计算
@@ -562,8 +565,6 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 	var newKeys = make([]interface{}, 0, 100)      // redis中存储新insert 的key
 	var insertData = make([][]interface{}, 0, 100) // 存储insert 的数据
 
-	datetimeField, _ := c.timeFormat(c.hourPrefix) // 格式化成mysql中的时间字段
-
 	res, err := redis.Ints(redisConn.Do("MGet", keys...)) // 查询redis，判断是否有insert记录
 
 	if err != nil {
@@ -574,6 +575,7 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 
 	switch kind {
 	case "time":
+		datetimeField, _ := c.timeFormat(c.hourPrefix, "hour") // 格式化成mysql中的时间字段
 		insertPrepare = "INSERT INTO " + timeTableName + " (datetime, path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUE (?,?,?,?,?,?,?,?,?,?);"
 		for i, v := range res {
 			timeFieldKey := strings.Split(keys[i].(string), ":")
@@ -591,6 +593,7 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 		}
 
 	case "area":
+		datetimeField, _ := c.timeFormat(c.hourPrefix, "hour") // 格式化成mysql中的时间字段
 		insertPrepare = "INSERT INTO " + areaTableName + "(datetime, country,province,city,path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?); "
 		for i, v := range res {
 			areaFieldKey := strings.Split(keys[i].(string), ":")
@@ -605,6 +608,20 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 					areaTableName, sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp, v)
 			}
 		}
+	case "user":
+		// 生成 ob_stat_user 表 sql文件
+		datetimeField, _ := c.timeFormat(c.hourPrefix, "day") // 格式化成mysql中的时间字段
+		insertPrepare = "INSERT INTO " + newUserTableName + " (datetime,appid,users,app_users) VALUES (?,?,?,?);"
+		for i, v := range res {
+			userFieldKey := strings.Split(keys[i].(string), ":")
+			sPtr := c.userResult[userFieldKey[2]]
+			if v == 0 {
+				insertData = append(insertData, []interface{}{datetimeField,userFieldKey[2],sPtr.user,sPtr.appUser})
+				newKeys = append(newKeys, keys[i])
+			}else{
+				updateSqlData += fmt.Sprintf("UPDATE %s SET users=users+%d,app_users=app_users+%d WHERE id=%d;\n", newUserTableName, sPtr.user, sPtr.appUser, v)
+			}
+		}
 	}
 	_ = c.mysqlInsert(insertPrepare, insertData, newKeys)
 	err = utils.WriteFiles("static/"+c.sqlFileName, []byte(updateSqlData))
@@ -614,59 +631,8 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 	}
 }
 
-// 生成 ob_stat_user 表 sql文件
-func (c *Computed) generateUserSql(result map[string]*userStatistic, keys []interface{}) {
-	redisConn := redisPool.Get()
 
-	defer func() {
-		wg.Done()
-		redisConn.Close()
-	}()
 
-	sqlData := ""
-	datetimeField, _ := c.timeFormat(c.hourPrefix)
-	newKeys := make([]interface{}, 0, 100)
-
-	res, err := redis.Ints(redisConn.Do("MGet", keys...))
-	if err != nil {
-		logger.Error("Redis MGet err:%v\n", err)
-		return
-	}
-	insertData := "INSERT INTO " + newUserTableName + " (datetime,appid,users,app_users) VALUES"
-	insertSlice := make([]string, 0, 100)
-	for i, v := range res {
-		userFieldKey := strings.Split(keys[i].(string), ":")
-		sPtr := result[userFieldKey[2]]
-		if v == 0 {
-			sql := fmt.Sprintf("(\"%s\",\"%s\",\"%d\",\"%d\")", datetimeField, userFieldKey[2], sPtr.user, sPtr.appUser)
-			newKeys = append(newKeys, []interface{}{keys[i], 1}...)
-			//sqlData += sql
-			insertSlice = append(insertSlice, sql)
-
-		} else {
-			sql := fmt.Sprintf("UPDATE %s SET users=users+%d,app_users=app_users+%d WHERE datetime=\"%s\" AND appid=\"%s\";\n", newUserTableName, sPtr.user, sPtr.appUser, datetimeField, userFieldKey[2])
-			sqlData += sql
-		}
-	}
-	if len(insertSlice) > 0 {
-		sqlData += insertData + strings.Join(insertSlice, ",") + ";\n"
-	}
-	if len(newKeys) != 0 {
-		_, err = redisConn.Do("MSet", newKeys...)
-		if err != nil {
-			logger.Error("Redis MSet err:%v\n", err)
-			logger.Error("new Keys :%v\n", newKeys)
-			return
-		}
-	}
-
-	err = utils.WriteFiles("static/"+c.sqlFileName, []byte(sqlData))
-	if err != nil {
-
-		logger.Error("Write Files err:%v \n", err)
-		return
-	}
-}
 
 // 生成留存率 sql文件
 func (c *Computed) Retention() (err error) {

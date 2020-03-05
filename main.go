@@ -9,7 +9,6 @@ package main
 
 import (
 	"os"
-
 	//"os"
 	"time"
 	"vmStat/computed"
@@ -18,6 +17,7 @@ import (
 )
 
 var logger logging.Logger
+
 
 func main() {
 	logger = logging.NewConsoleLogger("debug")
@@ -36,6 +36,7 @@ func main() {
 		c.Retention()
 	case "once":
 		logger.Debug("开始执行测试模式\n")
+		logger.Debug("程序运行pid %d\n", os.Getpid())
 		s := time.Now()
 		c := computed.New()
 		err := c.Run(utils.Setting.Logfile)
@@ -47,6 +48,7 @@ func main() {
 		os.Exit(0)
 	case "normal":
 		logger.Debug("开始执行生产模式\n")
+		logger.Debug("程序运行pid %d\n", os.Getpid())
 		for {
 			s := time.Now()
 			c := computed.New()
