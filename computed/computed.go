@@ -640,7 +640,7 @@ func (c *Computed) Retention() (err error) {
 		1. 获取当前时间
 		2. 依次计算每日APPID交集，如果存在，则计算，不存在，则留存率为0
 	*/
-
+	// 前一天时间为基准时间,通过前n天与基准时间做比较
 	timeStamp := time.Now().AddDate(0, 0, -1)
 
 	// 前一天日期
@@ -681,7 +681,7 @@ func (c *Computed) Retention() (err error) {
 			if i == 1 {
 				sql = fmt.Sprintf("insert into ob_stat_retention (datetime, appid, r1) values (\"%s\",\"%d\",\"%f\");\n", timeStamp.Format("2006-01-02"), appid, float32(len(eachRes))/float32(num))
 			} else {
-				sql = fmt.Sprintf("update ob_stat_retention set c%d=%f where datetime=\"%s\" and appid=%d;\n", i, float32(len(eachRes))/float32(num), timeStamp.Format("2006-01-02"), appid)
+				sql = fmt.Sprintf("update ob_stat_retention set r%d=%f where datetime=\"%s\" and appid=%d;\n", i, float32(len(eachRes))/float32(num), timeStamp.Format("2006-01-02"), appid)
 			}
 			sqlData = append(sqlData, []byte(sql)...)
 		}
