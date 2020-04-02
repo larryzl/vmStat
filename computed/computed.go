@@ -577,7 +577,8 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 	switch kind {
 	case "time":
 		datetimeField, _ := c.timeFormat(c.hourPrefix, "hour") // 格式化成mysql中的时间字段
-		insertPrepare = "INSERT INTO " + timeTableName + " (datetime, path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip) VALUE (?,?,?,?,?,?,?,?,?,?);"
+		dateField,_ := c.timeFormat(c.hourPrefix,"day")
+		insertPrepare = "INSERT INTO " + timeTableName + " (datetime, path, appid, pv, uv, path_uv, app_uv, path_app_uv,ip,app_ip,date) VALUE (?,?,?,?,?,?,?,?,?,?,?);"
 		for i, v := range res {
 			timeFieldKey := strings.Split(keys[i].(string), ":")
 
@@ -585,7 +586,7 @@ func (c *Computed) generateNormalSql(keys []interface{}, kind string) {
 			sPtr := c.timeResult[strings.Join(timeFieldKey[3:], ":")]
 
 			if v == 0 {
-				insertData = append(insertData, []interface{}{datetimeField, timeFieldKey[4], timeFieldKey[3], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp})
+				insertData = append(insertData, []interface{}{datetimeField, timeFieldKey[4], timeFieldKey[3], sPtr.pv, sPtr.uv, sPtr.pathUv, sPtr.appUv, sPtr.pathAppUv, sPtr.ip, sPtr.appIp,dateField})
 				newKeys = append(newKeys, keys[i])
 			} else {
 				updateSqlData += fmt.Sprintf("UPDATE  %s SET pv=pv+%d,uv=uv+%d, path_uv=path_uv+%d,app_uv=app_uv+%d,path_app_uv=path_app_uv+%d,ip=ip+%d,app_ip=app_ip+%d WHERE id=%d;\n",
