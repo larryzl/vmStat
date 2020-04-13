@@ -435,8 +435,11 @@ func (c *Computed) mysqlInsert(insertPrepare string, insertData [][]interface{},
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", utils.Setting.Mysql.Username, utils.Setting.Mysql.Password, utils.Setting.Mysql.IP, utils.Setting.Mysql.Port, utils.Setting.Mysql.Database)
 	dbw := DbWorker{Dsn: dsn}
+
 	// 建立连接
 	db, err := sql.Open("mysql", dbw.Dsn)
+	defer db.Close()
+
 	if err != nil {
 		logger.Error("MySQL 连接错误,err:%v\n", err)
 		return err
