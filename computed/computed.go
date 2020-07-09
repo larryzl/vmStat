@@ -185,9 +185,10 @@ func (c *Computed) Run(filePath string) (err error) {
 	n := 0
 	logger.Debug("开始整理日志\n")
 	for _, v := range accessData {
-		if v.Uid == "" || v.Uuid == "" {
-			continue
-		}
+		//if v.Uid == "" || v.Uuid == "" {
+		//
+		//}
+
 
 		ipInfo, err := region.MemorySearch(v.Ip)
 		if err != nil {
@@ -202,6 +203,7 @@ func (c *Computed) Run(filePath string) (err error) {
 		pathUvKey := c.dataPrefix + ":PUV:" + v.Path + ":" + v.Uuid                    // Redis存储的字段 日期+ path + uuid
 		appUvKey := c.dataPrefix + ":AUV:" + v.Appid + ":" + v.Uid                     // Redis存储的字段 日期+ appid + uid
 		pathAppUvKey := c.dataPrefix + ":PAUV:" + v.Path + ":" + v.Appid + ":" + v.Uid // Redis存储的字段 日期+ path + appid + uid
+
 		ipKey := c.dataPrefix + ":IP:" + v.Ip                                          // Redis存储的字段 日期+ path + appid + uid
 		appIpKey := c.dataPrefix + ":AIP:" + v.Appid + ":" + v.Ip                      // Redis存储的字段 日期+ path + appid + uid
 
@@ -341,6 +343,7 @@ func (c *Computed) basicInfoCalculation(s []interface{}, m map[interface{}]strin
 	}()
 	// 需要更新到redis中的key
 	redisNewKeys := make([]interface{}, 0, 100)
+
 	reply, err := redis.Ints(redisConn.Do("MGet", s...))
 	if err != nil {
 		logger.Error("Redis MGet Err:%v\n", err)
